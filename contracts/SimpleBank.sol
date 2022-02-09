@@ -39,7 +39,7 @@ contract SimpleBank {
 
         balances[msg.sender] += msg.value;
         balance = balances[msg.sender];
-        emit LogDepositMade(msg.sender, msg.value, balance
+        emit LogDepositMade(msg.sender, msg.value, balance);
     }
 
     /// @notice Withdraw ether from bank
