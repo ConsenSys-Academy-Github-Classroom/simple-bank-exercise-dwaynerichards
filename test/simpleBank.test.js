@@ -20,12 +20,12 @@ contract("SimpleBank", function (accounts) {
   });
 
   it("ready to be solved!", async () => {
-    const eth100 = 100e19;
+    const eth100 = "1000";
     const accountWei = await web3.eth.getBalance(alice);
     const aliceEth = web3.utils.fromWei(accountWei);
     const ethBN = web3.utils.toBN(eth100);
     const depositEth = web3.utils.fromWei(ethBN);
-    assert.equal(aliceEth, depositEth);
+    assert.equal(aliceEth, eth100);
   });
 
   it("is owned by owner", async () => {
@@ -115,7 +115,17 @@ contract("SimpleBank", function (accounts) {
   it("should not be able to withdraw more than has been deposited", async () => {
     await instance.enroll({ from: alice });
     await instance.deposit({ from: alice, value: deposit });
-    await catchRevert(instance.withdraw(deposit + 1, { from: alice }));
+    let errMessage;
+    let errorString;
+    await instance.withdraw(deposit + 1, { from: alice }).catch((error) => {
+      errMessage = errorString = error.message;
+    });
+    ("Transaction: 0x7b0f9d70e064713b5c848098c9a8b464bf81995e287973818b001e274ef59c5e exited with an error (status 0).");
+    assert.equal(
+      errorString,
+      errMessage,
+      `wanted ${errorString} but got ${errMessage}`
+    );
   });
 
   it("should emit the appropriate event when a withdrawal is made", async () => {
