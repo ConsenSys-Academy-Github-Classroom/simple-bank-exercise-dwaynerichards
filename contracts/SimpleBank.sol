@@ -8,19 +8,15 @@ contract SimpleBank {
     address public owner = msg.sender;
 
     event LogEnrolled(address accountAddress);
-    event LogDepositMade(address accountAddress, uint256 depositAmount);
+    event LogDepositMade(address accountAddress, uint256 amount);
     event LogWithdrawal(
         address accountAddress,
         uint256 withdrawAmount,
         uint256 newBalance
     );
 
-    function() external payable {
-        revert();
-    }
-
     /// @notice Get balance
-    /// @return The balance of the user
+    /// @return balance The balance of the user
     function getBalance() external view returns (uint256 balance) {
         balance = balances[msg.sender];
     }
@@ -33,35 +29,38 @@ contract SimpleBank {
     }
 
     /// @notice Deposit ether into bank
-    /// @return The balance of the user after the deposit is made
+    /// @return balance The balance of the user after the deposit is made
     function deposit() external payable returns (uint256 balance) {
         require(enrolled[msg.sender] == true, "You need to be enrolled");
 
         balances[msg.sender] += msg.value;
         balance = balances[msg.sender];
-        emit LogDepositMade(msg.sender, msg.value, balance);
+        emit LogDepositMade(msg.sender, msg.value);
+    }
+
+    modifier canWithdraw(uint256 amount) {
+        require(enrolled[msg.sender] == true, "Must be enrolled");
+        uint256 balance = balances[msg.sender];
+        if (amount > balance) {
+            revert();
+        }
+        _;
     }
 
     /// @notice Withdraw ether from bank
     /// @dev This does not return any excess ether sent to it
     /// @param withdrawAmount amount you want to withdraw
-    /// @return The balance remaining for the user
-    modifier canWithdraw(uint256 amount) {
-        uint256 balance = balances[msg.sender];
-        require(amount < balance, "Amount exceeds balance");
-        require(enrolled[msg.sender] == true, "Must be enrolled");
-        _;
-    }
+    /// @return balance The balance remaining for the user
 
-     function withdraw(uint256 withdrawAmount)
+    function withdraw(uint256 withdrawAmount)
         external
         canWithdraw(withdrawAmount)
         returns (uint256 balance)
     {
         balances[msg.sender] -= withdrawAmount;
-        uint256 sent = sendFunds(msg.sender, withdrawAmount);
+        bool sent = sendFunds(msg.sender, withdrawAmount);
         balance = this.getBalance();
-        emit LogWithdrawl(msg.sender, withdrawAmount, balance);
+        emit LogWithdrawal(msg.sender, withdrawAmount, balance);
         require(sent, "Withdraw not executed");
     }
 
@@ -71,5 +70,8 @@ contract SimpleBank {
     {
         (sent, ) = payable(recipient).call{value: funds}("");
     }
-}
+
+    receive() external payable {}
+
+    fallback() external {}
 }
